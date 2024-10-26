@@ -41,11 +41,11 @@ def create_user():
     body = json.loads(request.data)
 
     if "name" not in body and "username" not in body:
-        return failure_response("Name and username are required!")
+        return failure_response("Name and username are required!", 400)
     elif "username" not in body:
-        return failure_response("Username is required!")
+        return failure_response("Username is required!", 400)
     elif "name" not in body:
-        return failure_response("Name is required!")
+        return failure_response("Name is required!", 400)
 
     name = body["name"]
     username = body["username"]
@@ -88,8 +88,6 @@ def send_money():
     
     body = json.loads(request.data)
 
-    print(body)
-
     fields = ["amount", "sender_id", "receiver_id"]
     blank_fields = []
     for field in fields:
@@ -97,7 +95,7 @@ def send_money():
             blank_fields.append(field)
 
     if blank_fields:
-        return failure_response(f"Fields {blank_fields} are required", 404)
+        return failure_response(f"Fields {blank_fields} are required", 400)
 
     amount = body["amount"]
 
@@ -158,7 +156,7 @@ def create_user_with_password():
             blank_fields.append(field)
 
     if blank_fields:
-        return failure_response(f"Fields {blank_fields} are required", 404)
+        return failure_response(f"Fields {blank_fields} are required", 400)
 
     name = body["name"]
     username = body["username"]
@@ -166,70 +164,78 @@ def create_user_with_password():
     balance = body.get("balance", 0)
 
     hashed_password = hash_password(password)
-    user_id = DB.insert_user(name, username, hashed_password, balance)
-    user = DB.get_user_by_id(user_id)
+    user_id = DB.insert_user_extra(name, username, hashed_password, balance)
+    user = DB.get_user_by_id_extra(user_id)
 
-    user["password"] = "********"
+    user["password"] = password
+
     if user is None:
-        return failure_response("Something went wrong while creating user!", 500)
+        return failure_response("Something went wrong while creating user!")
     return success_response(user, 201)
 
-@app.route("/api/extra/user/<int:user_id>/", methods=["GET"])
+
+@app.route("/api/extra/user/<int:user_id>/", methods=["POST"])
 def get_user_with_password(user_id):
     body = json.loads(request.data)
 
     if "password" not in body:
-        return failure_response("Password is required!")
+        return failure_response("Password is required!", 401)
 
     password = body["password"]
-    user = DB.get_user_by_id(user_id)
+    user = DB.get_user_by_id_extra(user_id)
 
     if user is None:
         return failure_response("User not found")
+    
     if not verify_password(user["password"], password):
-        return failure_response("Incorrect password")
+        return failure_response("Incorrect password", 401)
     
-    user["password"] = "********"
-    
+    user["password"] = password
+
     return success_response(user)
 
 @app.route("/api/extra/send/", methods=["POST"])
 def send_money_with_password():
     body = json.loads(request.data)
 
-    fields = ["amount", "sender_id", "receiver_id", "password"]
+    if "password" not in body:
+        return failure_response("Password is required!", 401)
+
+    fields = ["amount", "sender_id", "receiver_id"]
     blank_fields = []
     for field in fields:
         if field not in body:
             blank_fields.append(field)
 
     if blank_fields:
-        return failure_response(f"Fields {blank_fields} are required", 404)
+        return failure_response(f"Fields {blank_fields} are required", 400)
 
     amount = body["amount"]
     sender_id = body["sender_id"]
     receiver_id = body["receiver_id"]
     password = body["password"]
 
-    sender = DB.get_user_by_id(sender_id)
-    receiver = DB.get_user_by_id(receiver_id)
+    sender = DB.get_user_by_id_extra(sender_id)
+    receiver = DB.get_user_by_id_extra(receiver_id)
 
-    if sender is None or not verify_password(sender["password"], password):
-        return failure_response("Sender not found or incorrect password!")
+    if not verify_password(sender["password"], password):
+        return failure_response("Incorrect password!", 401)
+    if sender is None:
+        return failure_response("Sender not found!", 404)
     if receiver is None:
-        return failure_response("Receiver not found!")
+        return failure_response("Receiver not found!", 404)
 
     sender_balance = sender["balance"] - amount
     receiver_balance = receiver["balance"] + amount
 
     if sender_balance >= 0:
-        DB.update_user_by_id(sender_id, sender["name"], 
+        DB.update_user_by_id_extra(sender_id, sender["name"], 
                              sender["username"], sender["password"], sender_balance)
-        DB.update_user_by_id(receiver_id, receiver["name"], 
+        DB.update_user_by_id_extra(receiver_id, receiver["name"], 
                              receiver["username"], receiver["password"], receiver_balance)
         return success_response(body, 200)
     else:
-        return failure_response("Insufficient funds", 404)
+        return failure_response("Insufficient funds", 400)
 
 
 
