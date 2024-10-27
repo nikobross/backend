@@ -186,13 +186,17 @@ def get_user_with_password(user_id):
     password = body["password"]
     user = DB.get_user_by_id_extra(user_id)
 
+    if "password" not in user:
+        return failure_response("Password not found")
+
     if user is None:
         return failure_response("User not found")
     
     if not verify_password(user["password"], password):
         return failure_response("Incorrect password", 401)
     
-    user["password"] = password
+    del user["password"]
+    del user["balance"]
 
     return success_response(user)
 
@@ -236,6 +240,9 @@ def send_money_with_password():
                              sender["username"], sender["password"], sender_balance)
         DB.update_user_by_id_extra(receiver_id, receiver["name"], 
                              receiver["username"], receiver["password"], receiver_balance)
+        
+        del body["password"]
+
         return success_response(body, 200)
     else:
         return failure_response("Insufficient funds", 400)
