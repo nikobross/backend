@@ -18,10 +18,12 @@ class DatabaseDriver(object):
     Handles reading and writing data with the database.
     """
 
+    # initialize the daraabase driver object
     def __init__(self):
         self.conn = sqlite3.connect("venmo.db", check_same_thread=False)
         self.create_user_table()
 
+    # create the user table
     def create_user_table(self):
         try:
             self.conn.execute("""
@@ -36,6 +38,7 @@ class DatabaseDriver(object):
         except Exception as e:
             print(e)
 
+    # get all users from the user table
     def get_all_users(self):
         cursor = self.conn.execute("SELECT * FROM user;")
         users = []
@@ -45,6 +48,7 @@ class DatabaseDriver(object):
 
         return users
     
+    # insert a user into the user table
     def insert_user(self, name, username, balance, password=None):
         cursor = self.conn.cursor()
         if password:
@@ -56,6 +60,7 @@ class DatabaseDriver(object):
         self.conn.commit()
         return cursor.lastrowid
     
+    # get a user by their ID
     def get_user_by_id(self, id):
         cursor = self.conn.execute("SELECT * FROM user WHERE ID = ?", (id,))
 
@@ -64,6 +69,7 @@ class DatabaseDriver(object):
 
         return None
     
+    # update a user by their ID
     def update_user_by_id(self, id, name, username, balance):
         self.conn.execute("""
             UPDATE user 
@@ -72,6 +78,7 @@ class DatabaseDriver(object):
         """, (name, username, balance, id))
         self.conn.commit()
 
+    # delete a user by their ID
     def delete_user_by_id(self, id):
         self.conn.execute("""
             DELETE FROM user
@@ -81,6 +88,7 @@ class DatabaseDriver(object):
 
     # ------Extra Credit------
 
+    # update a user by their ID requiring a password
     def update_user_by_id_extra(self, id, name, username, password, balance):
         self.conn.execute("""
             UPDATE user 
@@ -89,6 +97,7 @@ class DatabaseDriver(object):
         """, (name, username, password, balance, id))
         self.conn.commit()
 
+    # get a user by their ID requiring a password
     def get_user_by_id_extra(self, id):
         cursor = self.conn.execute("SELECT * FROM user WHERE ID = ?", (id,))
 
@@ -97,6 +106,7 @@ class DatabaseDriver(object):
 
         return None
 
+    # insert a user into the user table requiring a password
     def insert_user_extra(self, name, username, password, balance):
         cursor = self.conn.cursor()
         cursor.execute("INSERT INTO user (NAME, USERNAME, PASSWORD, BALANCE) VALUES (?, ?, ?, ?);", 

@@ -24,9 +24,10 @@ def hello_world():
 
 # your routes here
 
+
+# route to return all users in the database
 @app.route("/api/users/", methods=["GET"])
 def get_users():
-    # Route to get all users
     users = DB.get_all_users()
 
     # hide the balance of the
@@ -35,9 +36,9 @@ def get_users():
 
     return success_response({"users": users})
 
+# route to create a user
 @app.route("/api/users/", methods=["POST"])
 def create_user():
-    # Route to create a new user
     body = json.loads(request.data)
 
     if "name" not in body and "username" not in body:
@@ -62,19 +63,18 @@ def create_user():
     
     return success_response(user, 201)
 
-
+# route to get a specific user by ID
 @app.route("/api/user/<int:user_id>/", methods=["GET"]) 
 def get_user(user_id):
-    # Route to get a specific user by ID
     user = DB.get_user_by_id(user_id)
     if user is None:
         return failure_response("User not found!")
 
     return success_response(user)
 
+# route to delete a specific user by ID
 @app.route("/api/user/<int:user_id>/", methods=["DELETE"])
 def delete_user(user_id):
-    # Route to delete a specific user by ID
     user = DB.get_user_by_id(user_id)
 
     if user is None:
@@ -83,9 +83,9 @@ def delete_user(user_id):
 
     return success_response(user)
 
+# route to send money based on an ID
 @app.route("/api/send/", methods=["POST"])
 def send_money():
-    
     body = json.loads(request.data)
 
     fields = ["amount", "sender_id", "receiver_id"]
@@ -127,17 +127,18 @@ load_dotenv()
 PASSWORD_SALT = os.getenv('PASSWORD_SALT').encode('utf-8')
 NUMBER_OF_ITERATIONS = int(os.getenv('NUMBER_OF_ITERATIONS'))
 
+# hash the password
 def hash_password(password):
     hashed = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), PASSWORD_SALT, NUMBER_OF_ITERATIONS)
     return PASSWORD_SALT + hashed
 
+# verify the password
 def verify_password(stored_password, provided_password):
-    salt = stored_password[:len(PASSWORD_SALT)]
     stored_hash = stored_password[len(PASSWORD_SALT):]
-    provided_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode('utf-8'), salt, NUMBER_OF_ITERATIONS)
+    provided_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode('utf-8'), PASSWORD_SALT, NUMBER_OF_ITERATIONS)
     return stored_hash == provided_hash
 
-# for testing purposes
+# deleting all users for testing purposes
 @app.route("/api/users/all/", methods=["DELETE"])
 def delete_all_users():
     users = DB.get_all_users()
@@ -145,6 +146,7 @@ def delete_all_users():
         DB.delete_user_by_id(user["id"])
     return success_response("All users deleted!")
 
+# route to create a user with a password
 @app.route("/api/extra/users/", methods=["POST"])
 def create_user_with_password():
     body = json.loads(request.data)
@@ -173,7 +175,7 @@ def create_user_with_password():
         return failure_response("Something went wrong while creating user!")
     return success_response(user, 201)
 
-
+# route to get a specific user by ID with password
 @app.route("/api/extra/user/<int:user_id>/", methods=["POST"])
 def get_user_with_password(user_id):
     body = json.loads(request.data)
@@ -194,6 +196,7 @@ def get_user_with_password(user_id):
 
     return success_response(user)
 
+# route to send money with password
 @app.route("/api/extra/send/", methods=["POST"])
 def send_money_with_password():
     body = json.loads(request.data)
