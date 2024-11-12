@@ -1,4 +1,4 @@
-Name:
-NetID:
+Name: Niko Ross
+NetID: nbr26
 
-Challenges Attempted: Tier (I/II/III)
+Challenges Attempted: None
